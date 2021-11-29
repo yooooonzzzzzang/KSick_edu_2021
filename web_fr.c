@@ -1,12 +1,12 @@
-/*웹에서 동작하는 친구관리 프로그램 */
+
 
 #define BUFSIZE 512
 #define count 10
-#define HEADER_FMT "HTTP/1.1 %d %s\nContene-Length: %ld\nContent-Type: %s\n\n"
+#define HEADER_FMT "HTTP/1.1 %d %s\nContent.Length: %ld\nContent-Type: %s\n\n"
 #define SHOW_FR_LIST "<a href=\"/fr?view=%d\">%s</a><br>"
-#define VIEW_FR "<h2>%s 상세 정보</h2><p><li>이름: %s</li><li>나이: %s</li><li>주소:%s</li><li>성별: %s</li><li>연락처: %s</li></p></body></html>      "
-#define NOT_FOUND_CONTENT "<h1>404 NOT FOUND</h1>\n"
-#define SERVER_ERROR_CONTENT "<h1>500 Internal SErver Error</h1>\n"
+#define VIEW_FR "<h2>%s 상세 정보</h2><p><li>이름: %s</li><li>나이: %s</li><li>주소: %s</li><li>성별: %s</li><li>연락처: %s</li></p></body></html>      "
+#define NOT_FOUND_CONTENT "<hi>404 Not Found</h1>\n"
+#define SERVER_ERROR_CONTENT "<h1>500 Internal Server Error</h1>\n"
 
 #include <stdio.h>
 #include <string.h>
@@ -23,7 +23,7 @@
 FRIEND_T fr;
 
 int bind_sock(int sock, int port);
-void fill_header(char *header, int status, long len, char*type);
+void fill_header(char *header, int status, long len, char *type);
 char *find_mime(char *url);
 void handle_404(int asock);
 void handle_500(int asock);
@@ -32,76 +32,80 @@ void http_handler(int asock);
 //list.html 파일 만들기
 void list_fr(int page)
 {
-	int fd, li;
+	int fd,li;
 	char buf[BUFSIZE];
 	char *buf2;
 
-	if((fd=open(FR_FNAME, O_RDWR, 0644)) == -1){
+	if((fd=open("Finfo.dat", O_RDWR, 0644)) == -1) {
 		perror("open failed");
 		exit(1);
 	}
-	if((li=open("list.html", O_RDWR, 0644)) == -1){
-			perror("open fialed list.html");
-			exit(1);
+
+	if((li=open("list.html", O_RDWR,0644)) == -1) {
+		perror("open failed show.html");
+		exit(1);
 	}
-	lseek(fd, (page-1)*10*sizeof(fr), SEEK_SET);
-        sprintf(buf, "<html><head><meta charset=\"utf-8\"><title>friend list page</title></head><body>");
-        write(li,buf,strlen(buf));
+	lseek(fd,(page-1)*count*sizeof(fr),SEEK_SET);
+	sprintf(buf,"<html><head><meta charset=\"utf-8\"><title>friend list page</title></head><body>");
+	write(li,buf,strlen(buf));
 
-        sprintf(buf, "<h2>친구목록 %d 페이지<h2><p>", page);
-        write(li,buf, strlen(buf));
+	sprintf(buf,"<h2>친구목록 %d 페이지</h2><p>",page);
+	write(li,buf,strlen(buf));
 
-        for(int i=0; i<count; i++){
-                if(read(fd, &fr, sizeof(fr))<=0){
-                //더 이상 읽을 친구 목록이 없을 경우 처리하는 코드 작성하기.
-                	if((buf2=(FRIEND_T *)malloc((count-i)*64))==NULL)
-				exit(1);
-			memset(buf2, ' ', (count-i)*64);
-			write(li, buf2, strlen(buf2));
-			
-			printf("end .... \n");
+	sprintf(buf, "<h2>친구목록 %d 페이지 </h2><p2>", page);
+	write(li,buf,strlen(buf));
+	for(int i=0;i<count;i++){
+		if(read(fd,&fr, sizeof(fr))<=0) {
+			//더 이상 읽을 친구 목록이 없을 경우 처리하는 코드 작성하기.
+			if((buf2=(FRIEND_T *)malloc((count-i)*64))==NULL) exit(1);
+			memset(buf2,' ',(count-i)*64);
+			write(li,buf2,strlen(buf2));
+
+			printf("end.....\n");
 			free(buf2);
-                        break;
-                }else{
-                        bzero(buf, sizeof(buf));
-                        sprintf(buf, SHOW_FR_LIST,((page-1)*10)+i, fr.name);
-                        write(li,buf,strlen(buf));
-                }
-        }
-        bzero(buf, sizeof(buf));
-        sprintf(buf, "</p></body></html>             ");
-        write(li,buf,strlen(buf));
+			break;
+		}
+		else {
+			bzero(buf,sizeof(buf));
+			sprintf(buf,SHOW_FR_LIST,((page-1)*10)+i,fr.name);
+			write(li,buf,strlen(buf));
 
-	close(fd); 
+		}
+	}
+	bzero(buf, sizeof(buf));
+	sprintf(buf,"</p></body></html>           ");
+	write(li, buf, strlen(buf));
+
+	close(fd);
 	close(li);
+
 }
 
-//view.html파일 만들기
-void view_fr(int index){
-	int fd, vi;
+// view.html 파일 만들기
+void view_fr(int index) {
+	int fd,vi;
 	char buf[BUFSIZE];
 
-	if((fd=open(FR_FNAME, O_RDWR, 0644))==-1){
+	if((fd=open("Fiofo.dat", O_RDWR,0644))==-1) {
 		perror("open failed");
 		exit(1);
 	}
-	if((vi=open("view.html", O_RDWR, 0644))==-1){
+	if((vi=open("view.html", O_RDWR, 0644)) == -1) {
 		perror("open failed");
 		exit(1);
 	}
-	lseek(fd, index*sizeof(fr), SEEK_SET);
-	read(fd, &fr, sizeof(fr));
-	
-	sprintf(buf,"<html><head><meta charset=\"utf-8\"><title>friend view page</title></head><body>");
-	write(vi, buf, strlen(buf));
 
-	sprintf(buf,VIEW_FR,fr.name,fr.name,fr.age,fr.addr,fr.email,fr.phone);
-	write(vi,buf,strlen(buf));
+	lseek(fd,index*sizeof(fr),SEEK_SET);
+	read(fd,&fr,sizeof(fr));
+	
+	sprintf(buf, "<html><head>meta charset=\"utf-8\"><title>friend view page</title></head><body>");
+	write(vi, buf, strlen(buf));
 
 	close(fd);
 	close(vi);
 }
-int main(int argc, char**argv)
+
+int main(int argc, char *argv[])
 {
 	int port, pid;
 	int servSock, clntSock;
@@ -109,51 +113,59 @@ int main(int argc, char**argv)
 	struct sockaddr_in servAddr;
 	socklen_t serv_len;
 
-	if(argc<2){
-		printf("Usage : \n");
-		printf("\t%s {port}: runs mini HTTP server. \n", argv[0]);
+	if(argc<2) {
+		printf("Usage: \n");
+		printf("\t%s {port}: runs mini HTTP server.\n", argv[0]);
 		exit(1);
 	}
-	port = atoi(argv[1]);
-	printf("[INFO] The server will listen to port: %d.\n", port);
+
+	port=atoi(argv[1]);
+	printf("[INFO] The server will listen to prot: %d. \n", port);
+
 	servSock = socket(AF_INET, SOCK_STREAM, 0);
 	if(servSock<0){
-		perror("[ERR] failed to create servSock.\n");
+		perror("[ERR] failed to create servSock. \n");
 		exit(1);
 	}
 	if(bind_sock(servSock, port)<0){
-		perror("[ERR] failed to bind servSock.\n");
+		perror("[ERR] failed to bind servSock. \n");
 		exit(1);
 	}
+
 	if(listen(servSock, 10)<0){
-		perror("[ERR]failed to listen servSock.\n");
+		perror("[ERR] failed to listen servSock.\n");
 		exit(1);
 	}
+
 	signal(SIGCHLD, SIG_IGN);
 
 	while(1){
-		printf("[INFO] waiting ... \n");
+		printf("[INFO] waiting....\n");
 
-		clntSock= accept(servSock, (struct sockaddr *)&servAddr, &serv_len);
-		if(clntSock<0){
+		clntSock=accept(servSock, (struct sockaddr *)&servAddr, &serv_len);
+		printf("[INFO] waitting...\n");
+
+		clntSock=accept(servSock, (struct sockaddr *)&servAddr, &serv_len);
+		if(clntSock<0) {
 			perror("[ERR] failed to accept.\n");
 			continue;
 		}
 
-		pid = fork();
+		pid=fork();
 
-		if(pid == 0){
+		//child process : client 요청 처리
+
+		if(pid==0){
 			close(servSock);
 			http_handler(clntSock);
 			close(clntSock);
 			exit(0);
 		}
-		if(pid != 0)
-			close(clntSock);
-		if(pid <0)
-			perror("[ERR] failed to fork.\n");
+		if(pid !=0){close(clntSock); }
+		if(pid <0){perror("[ERR] failed to fork.\n");}
 	}
 }
+
 int bind_sock(int sock, int port)
 {
 	struct sockaddr_in sin;
@@ -162,7 +174,7 @@ int bind_sock(int sock, int port)
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
 	sin.sin_port = htons(port);
 
-	return bind(sock, (struct sockaddr *) &sin, sizeof(sin));
+	return bind(sock, (struct sockaddr *)&sin, sizeof(sin));
 }
 
 void fill_header(char *header, int status, long len, char *type)
@@ -172,47 +184,60 @@ void fill_header(char *header, int status, long len, char *type)
 		case 200:
 			strcpy(status_text, "OK"); break;
 		case 404:
-			strcpy(status_text, "NOt Found");break;
+			strcpy(status_text, "Not Found"); break;
 		default:
 			strcpy(status_text, "Internal Server Error"); break;
 	}
 	sprintf(header, HEADER_FMT, status, status_text, len, type);
 }
+
 char *find_mime(char *fpath)
 {
-	char *t, *ctype = "None";
-	int i =0;
-	char *mts[] = {
-		"txt", "text/plain",
-		"htm", "text/html",
-		"html","text/html",
-		"css", "text/css",
-		"js", "text/javascript",
-		"jpg", "image/jpeg",
-		"png", "image/png",
-		"gif", "image/gif",
-		NULL, NULL};
+	char *t, *ctype="None";
+	int i=0;
+	char *mts[]={
+			"txt", "text/plain",
+			"htm", "text/html",
+			"html", "text/html",
+			"css", "text/css",
+			"js", "text/javascript",
+			"jpg", "image/jpeg",
+			"png", "image/png",
+			"gif", "image/gif",
+			NULL, NULL };
 
-	t=strrchr(fpath, ".");
+	t=strrchr(fpath, '-');
 	if(!t){
 		return ctype;
 	}
-	if(strchr(t, '/')){
+	if(strchr(t,'/')){
 		return ctype;
 	}
 	for(t++;mts[i];i+=2){
-		if(!strcasecmp(t,mts[i])){
+		if(!strcasecmp(t,mts[i])) {
 			return mts[i+1];
 		}
 	}
+
 	return ctype;
 }
+
 void handle_404(int clntSock)
 {
 	char header[BUFSIZE];
-	fill_header(header, 404, sizeof(NOT_FOUND_CONTENT),"text/html");
+	fill_header(header, 404, sizeof(NOT_FOUND_CONTENT), "text/html");
+
 	write(clntSock, header, strlen(header));
-	write(clntSock, NOT_FOUND_CONTENT, sizeof(SERVER_ERROR_CONTENT));
+	write(clntSock, NOT_FOUND_CONTENT, sizeof(NOT_FOUND_CONTENT));
+}
+
+void handle_500(int clntSock)
+{
+	char header [BUFSIZE];
+	fill_header(header, 500, sizeof(SERVER_ERROR_CONTENT), "text/html");
+
+	write(clntSock, header, strlen(header));
+	write(clntSock, SERVER_ERROR_CONTENT, sizeof(SERVER_ERROR_CONTENT));
 }
 
 void http_handler(int clntSock)
@@ -221,15 +246,15 @@ void http_handler(int clntSock)
 	char buf[BUFSIZE];
 
 	if(read(clntSock, buf, BUFSIZE)<0){
-		perror("[ERR] Failed to read request. \n");
+		perror("[ERR] Failed to read requerst./n");
 		handle_500(clntSock);
 		return;
 	}
+
 	char *method = strtok(buf, " ");
-	char *url=strtok(NULL, " ");
-
+	char *url = strtok(NULL, " ");
+	
 	if(method == NULL || url == NULL) {
-
 		perror("[ERR] Failed to identify method, URL.\n");
 		handle_500(clntSock);
 		return;
@@ -291,41 +316,3 @@ void http_handler(int clntSock)
 	close(fd);
 	printf("[INFO] print file.\n");
 }
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

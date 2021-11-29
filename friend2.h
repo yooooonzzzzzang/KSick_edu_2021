@@ -11,4 +11,4 @@ typedef struct{
         char email[256];
         char phone[16];
 }FRIEND_T;
-        
+       
