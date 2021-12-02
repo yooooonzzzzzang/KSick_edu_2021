@@ -1,4 +1,4 @@
-
+/*이게 진짜 */
 
 #define BUFSIZE 512
 #define count 10

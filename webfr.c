@@ -1,10 +1,12 @@
-/*웹에서 동작하는 친구관리 프로그램 */
+/*웹에서 동작하는 친구관리 프로그램 
+이게 진짜
+*/
 
-#define BUFSIZE 512
+#define BUFSIZE 1024
 #define count 10
 #define HEADER_FMT "HTTP/1.1 %d %s\nContene-Length: %ld\nContent-Type: %s\n\n"
 #define SHOW_FR_LIST "<a href=\"/fr?view=%d\">%s</a><br>"
-#define VIEW_FR "<h2>%s 상세 정보</h2><p><li>이름: %s</li><li>나이: %s</li><li>주소:%s</li><li>성별: %s</li><li>연락처: %s</li></p></body></html>      "
+#define VIEW_FR "<h2>%s 상세 정보</h2><p1><li>이름: %s</li><li>나이: %s</li><li>주소:%s</li><li>성별: %s</li><li>연락처: %s</li></p></body></html>      "
 #define NOT_FOUND_CONTENT "<h1>404 NOT FOUND</h1>\n"
 #define SERVER_ERROR_CONTENT "<h1>500 Internal SErver Error</h1>\n"
 
@@ -35,12 +37,18 @@ void list_fr(int page)
 	int fd, li;
 	char buf[BUFSIZE];
 	char *buf2;
+	int nResult = remove("./list.html");
 
 	if((fd=open(FR_FNAME, O_RDWR, 0644)) == -1){
 		perror("open failed");
 		exit(1);
 	}
-	if((li=open("list.html", O_RDWR, 0644)) == -1){
+	if(nResult != 0){
+		perror("remove failed");
+		exit(1);
+	}
+
+	if((li=open("list.html", O_RDWR|O_CREAT, 0644)) == -1){
 			perror("open fialed list.html");
 			exit(1);
 	}
@@ -54,13 +62,13 @@ void list_fr(int page)
         for(int i=0; i<count; i++){
                 if(read(fd, &fr, sizeof(fr))<=0){
                 //더 이상 읽을 친구 목록이 없을 경우 처리하는 코드 작성하기.
-                	if((buf2=(FRIEND_T *)malloc((count-i)*64))==NULL)
+                /*	if((buf2=(FRIEND_T *)malloc((count-i)*64))==NULL)
 				exit(1);
 			memset(buf2, ' ', (count-i)*64);
 			write(li, buf2, strlen(buf2));
 			
 			printf("end .... \n");
-			free(buf2);
+			free(buf2);*/
                         break;
                 }else{
                         bzero(buf, sizeof(buf));
@@ -80,12 +88,17 @@ void list_fr(int page)
 void view_fr(int index){
 	int fd, vi;
 	char buf[BUFSIZE];
+	int nResult = remove("./view.html");
+	if(nResult != 0){
+                 perror("remove failed");
+                 exit(1);
+          }
 
 	if((fd=open(FR_FNAME, O_RDWR, 0644))==-1){
 		perror("open failed");
 		exit(1);
 	}
-	if((vi=open("view.html", O_RDWR, 0644))==-1){
+	if((vi=open("view.html", O_RDWR|O_CREAT, 0644))==-1){
 		perror("open failed");
 		exit(1);
 	}
@@ -193,7 +206,7 @@ char *find_mime(char *fpath)
 		"gif", "image/gif",
 		NULL, NULL};
 
-	t=strrchr(fpath, ".");
+	t=strrchr(fpath, '.');
 	if(!t){
 		return ctype;
 	}
@@ -213,6 +226,13 @@ void handle_404(int clntSock)
 	fill_header(header, 404, sizeof(NOT_FOUND_CONTENT),"text/html");
 	write(clntSock, header, strlen(header));
 	write(clntSock, NOT_FOUND_CONTENT, sizeof(SERVER_ERROR_CONTENT));
+}
+void handle_500(int clntSock)
+{
+	char header[BUFSIZE];
+	fill_header(header, 500, sizeof(NOT_FOUND_CONTENT), "text/html");
+	write(clntSock, header, strlen(header));
+	write(clntSock, SERVER_ERROR_CONTENT, sizeof(SERVER_ERROR_CONTENT));
 }
 
 void http_handler(int clntSock)
